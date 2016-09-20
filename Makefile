@@ -9,10 +9,23 @@ SOURCES :=$(wildcard *.cpp)
 # C++ファイルの.cppをとったものを実行ファイルの名前とする
 EXECUTABLE :=$(SOURCES:.cpp=)
 
-all:$(EXECUTABLE)
+#all:$(EXECUTABLE)
 
-$(EXECUTABLE):$(SOURCES)
-	$(CC) $< $(LDFLAGS) $(CFLAGS) -o $@ $(LIB)
+#$(EXECUTABLE):$(SOURCES)
+#	$(CC) $(SOURCES) $(LDFLAGS) $(CFLAGS) -o $(EXECUTABLE) $(LIB)
+
+
+all: location_fix facedetect_demo ceatec_patlamp
+
+location_fix:
+	$(CC) location_fix.cpp $(LDFLAGS) $(CFLAGS) -o location_fix $(LIB)
+
+
+facedetect_demo:
+	$(CC) facedetect_demo.cpp $(LDFLAGS) $(CFLAGS) -o facedetect_demo $(LIB)
+
+ceatec_patlamp:
+	$(CC) ceatec_patlamp.cpp $(LDFLAGS) $(CFLAGS) -o ceatec_patlamp $(LIB)
 
 clean:
 	    rm -rf $(EXECUTABLE)
