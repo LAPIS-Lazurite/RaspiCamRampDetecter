@@ -16,7 +16,6 @@
 #include <vector>
 #include <string.h>
 #include <typeinfo>
-#include <time.h>
 
 // --------------------------------------------------------------
 // ★raspicam対応
@@ -112,7 +111,7 @@ void on_mouse(int event,int x, int y,int flags,void *param=NULL){
 	}
 }
 
-void serchBlinking(Mat grayImage, Mat &cameraFeed,int *count){
+void serchBlinking(Mat grayImage, Mat &cameraFeed,string &log){
 	// Initialization
 	Mat temp;
 	vector< vector<Point> > contours;
@@ -130,7 +129,7 @@ void serchBlinking(Mat grayImage, Mat &cameraFeed,int *count){
 	Scalar color;
 
 	// initializing log
-	//log = "";
+	log = "";
 	// copy original image
 	cameraFeed.copyTo(temp);
 
@@ -150,15 +149,14 @@ void serchBlinking(Mat grayImage, Mat &cameraFeed,int *count){
 
 		// generate color from mean and map
 		if(mean[0]>pat_ramp[i].threshold){
-			count[i+1]++;
-			//log += "1,";
+			log += "1,";
 			if(pat_ramp[i].color=="g") color=Scalar(0,255,0);
 			else if(pat_ramp[i].color=="y") color=Scalar(0,255,255);
 			else if(pat_ramp[i].color=="r") color=Scalar(0,0,255);
 			else color = Scalar(255,255,255);
 		} else {
 			color = Scalar(255,255,255);
-			//log += "0,";
+			log += "0,";
 		}
 
 		// generating line in frame
@@ -199,14 +197,6 @@ int main( int argc, const char** argv )
 	uint8_t ch=36;
 	uint16_t panid=0xFFFF;
 	uint16_t rxaddr=0xFFFF;
-
-	// time
-	time_t current_time;
-	time_t last_tx_time;
-	time(&last_tx_time);
-	int count[64];
-	memset(count,0,sizeof(count));
-	
 	if(argc > 1) {
 		ch = strtol(argv[1],&en,0);
 	}
@@ -220,10 +210,6 @@ int main( int argc, const char** argv )
 	
 	if((result=lazurite_init())!=0) {
 		printf("lazurite_open error = %d",result);
-		return EXIT_FAILURE;
-	}
-	if((result=lazurite_setAddrType(4)!=0)) {
-		printf("lazurite_setPanid error = %d",result);
 		return EXIT_FAILURE;
 	}
 	if((result=lazurite_begin(ch,panid,100,20))!=0) {
@@ -275,36 +261,22 @@ int main( int argc, const char** argv )
 			// convert to grayImage
 			cv::cvtColor(frame1,grayImage,COLOR_BGR2GRAY);
 
-			serchBlinking(grayImage,frame1,count);
-			count[0]++;
+			string result;
+			serchBlinking(grayImage,frame1,result);
+			result += "\n";
 
-			// check tx timing
-			time(&current_time);
-			if((current_time - last_tx_time)>10)
-			{
-				char result[128];
-				last_tx_time=current_time;
-				sprintf(result,"%d,%.0f,%.0f,%.0f\n",
-						count[0],
-						(float)count[1]/count[0]*100,
-						(float)count[2]/count[0]*100,
-						(float)count[3]/count[0]*100);
-				printf("%s",result);
-				int ack;
-				// display log
-				ack= lazurite_send(panid,rxaddr,result,strlen(result));
-				if(ack <0 ) {
-					lazurite_close();
-					lazurite_remove();
-					lazurite_init();
-					lazurite_setAddrType(4);
-					lazurite_begin(ch,panid,100,20);
-					printf("restert lzgw\n");
-				}
-				// send log through sub-ghz
-				memset(count,0,sizeof(count));
+			// display log
+			printf("%s",result.c_str());
+			int ack;
+			ack= lazurite_send(panid,rxaddr,result.c_str(),result.size());
+			if(ack <0 ) {
+				lazurite_close();
+				lazurite_remove();
+				lazurite_init();
+				lazurite_begin(ch,panid,100,20);
+				printf("restert lzgw\n");
 			}
-
+			// send log through sub-ghz
 
 			// display Image
 			cv::imshow("origin", frame1);

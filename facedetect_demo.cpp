@@ -118,15 +118,13 @@ int main( int argc, const char** argv )
 			cv::flip(frame1,frame1,0);
 
 			// face detect
-			string filename = "/home/pi/opencv-2.4/data/haarcascades/haarcascade_frontalface_default.xml";
+			string filename = "/home/pi/opencv/data/haarcascades/haarcascade_frontalface_default.xml";
 			frame1=detectFaceInImage(frame1,filename,&numFace);
-
-			sprintf(msg,"%d",numFace);
-			cout << msg << endl;
 
 			if(numFace > 0){
 				// gen motor power
 				sprintf(msg,"%d",numFace*50);
+				cout << msg << endl;
 
 				// display log
 				ack= lazurite_send(panid,rxaddr,msg,strlen(msg));
