@@ -15,7 +15,7 @@ EXECUTABLE :=$(SOURCES:.cpp=)
 #	$(CC) $(SOURCES) $(LDFLAGS) $(CFLAGS) -o $(EXECUTABLE) $(LIB)
 
 
-all: location_fix facedetect_demo ceatec_patlamp
+all: patlamp
 
 location_fix:
 	$(CC) location_fix.cpp $(LDFLAGS) $(CFLAGS) -o location_fix $(LIB)
@@ -24,8 +24,9 @@ location_fix:
 facedetect_demo:
 	$(CC) facedetect_demo.cpp $(LDFLAGS) $(CFLAGS) -o facedetect_demo $(LIB)
 
-ceatec_patlamp:
-	$(CC) ceatec_patlamp.cpp $(LDFLAGS) $(CFLAGS) -o ceatec_patlamp $(LIB)
+patlamp:
+	rm -rf $(EXECUTABLE)
+	$(CC) patlamp.cpp $(LDFLAGS) $(CFLAGS) -o patlamp $(LIB)
 
 clean:
 	    rm -rf $(EXECUTABLE)

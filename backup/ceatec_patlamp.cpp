@@ -50,6 +50,11 @@ typedef struct {
 
 vector <MACHINE_MAP> pat_ramp;
 
+int ramp_count;
+int cycle_count;
+int detected_count[128];
+unsigned short myaddr;
+
 void load_mapfile()
 {
 	static fstream fs_map;
@@ -63,7 +68,7 @@ void load_mapfile()
 	// clear vector
 	pat_ramp.clear();
 	// open mapfile
-	fs_map.open("map.txt",std::ios::in);
+	fs_map.open("/home/pi/RaspiCamRampDetecter/map.txt",std::ios::in);
 	if(!fs_map.is_open()){
 		return;
 	}
@@ -112,7 +117,7 @@ void on_mouse(int event,int x, int y,int flags,void *param=NULL){
 	}
 }
 
-void serchBlinking(Mat grayImage, Mat &cameraFeed,int *count){
+void serchBlinking(Mat grayImage, Mat &cameraFeed){
 	// Initialization
 	Mat temp;
 	vector< vector<Point> > contours;
@@ -137,6 +142,8 @@ void serchBlinking(Mat grayImage, Mat &cameraFeed,int *count){
 	// detect of changes
 	Scalar mean;
 
+	ramp_count = pat_ramp.size();
+
 	for(int i = 0; i < pat_ramp.size();i++) {
 		//		minEnclosingCircle((Mat)contours[i],center[i],radius[i]);
 		// cut image
@@ -150,7 +157,7 @@ void serchBlinking(Mat grayImage, Mat &cameraFeed,int *count){
 
 		// generate color from mean and map
 		if(mean[0]>pat_ramp[i].threshold){
-			count[i+1]++;
+			detected_count[i]++;
 			//log += "1,";
 			if(pat_ramp[i].color=="g") color=Scalar(0,255,0);
 			else if(pat_ramp[i].color=="y") color=Scalar(0,255,255);
@@ -204,8 +211,9 @@ int main( int argc, const char** argv )
 	time_t current_time;
 	time_t last_tx_time;
 	time(&last_tx_time);
-	int count[64];
-	memset(count,0,sizeof(count));
+	cycle_count = 0;
+	ramp_count = 0;
+	memset(detected_count,0,sizeof(detected_count));
 	
 	if(argc > 1) {
 		ch = strtol(argv[1],&en,0);
@@ -230,6 +238,9 @@ int main( int argc, const char** argv )
 		printf("lazurite_setPanid error = %d",result);
 		return EXIT_FAILURE;
 	}
+
+	lazurite_getMyAddress(&myaddr);
+	printf("myaddress = 0x%04x\n",myaddr);
 
 	//CvCapture* capture = 0;
 	RaspiCamCvCapture* capture = 0;
@@ -275,24 +286,29 @@ int main( int argc, const char** argv )
 			// convert to grayImage
 			cv::cvtColor(frame1,grayImage,COLOR_BGR2GRAY);
 
-			serchBlinking(grayImage,frame1,count);
-			count[0]++;
+			serchBlinking(grayImage,frame1);
+			cycle_count++;
 
 			// check tx timing
 			time(&current_time);
 			if((current_time - last_tx_time)>10)
 			{
-				char result[128];
+				char result1[16];
+				char result2[16];
+				char result3[250];
+				char result4[250];
+				memset(result3,0,sizeof(result3));
 				last_tx_time=current_time;
-				sprintf(result,"%d,%.0f,%.0f,%.0f\n",
-						count[0],
-						(float)count[1]/count[0]*100,
-						(float)count[2]/count[0]*100,
-						(float)count[3]/count[0]*100);
-				printf("%s",result);
+				sprintf(result1,"0x%04x",myaddr);
+				for(int i = 0;i<ramp_count;i++) {
+					sprintf(result2,",%.1f",(float)detected_count[i]/cycle_count*100);
+					strcat(result3,result2);
+				}
+				sprintf(result4,"%s%s\n",result1,result3);
+				printf("%s",result4);
 				int ack;
 				// display log
-				ack= lazurite_send(panid,rxaddr,result,strlen(result));
+				ack= lazurite_send(panid,rxaddr,result4,strlen(result4));
 				if(ack <0 ) {
 					lazurite_close();
 					lazurite_remove();
@@ -302,7 +318,8 @@ int main( int argc, const char** argv )
 					printf("restert lzgw\n");
 				}
 				// send log through sub-ghz
-				memset(count,0,sizeof(count));
+				cycle_count = 0;
+				memset(detected_count,0,sizeof(detected_count));
 			}
 
 
