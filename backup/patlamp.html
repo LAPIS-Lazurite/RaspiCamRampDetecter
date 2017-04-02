@@ -1,0 +1,91 @@
+<!-- log file -->
+<script type="text/x-red" data-template-name="patlamp config">
+	<div class="form-row">
+		<label for="node-input-name"><i class="icon-tag"></i>Name</label>
+		<input type="text" id="node-input-name" placeholder="Name">
+	</div>
+	<div class="form-row">
+		<label for="node-input-filePath"><i class="icon-tag"></i>map file path</label>
+		<input type="text" id="node-input-mapfile" placeholder="mapfile">
+	</div>
+	<div class="form-row">
+		<label for="node-input-reportinterval"><i class="fa fa-clock"></i>Report Interval</label>
+		<input type="text" id="node-input-reportinterval" placeholder="reportinterval">
+	</div>
+	<div class="form-row">
+		<label for="node-input-detectinterval"><i class="fa fa-clock"></i>Detect Interval</label>
+		<input type="text" id="node-input-detectinterval" placeholder="detectinterval">
+	</div>
+	<div class="form-row" id="ui-chart-colours">
+		<label for="node-input-color1">Series Colours</label>
+		<input type="color" id="node-input-color1" class="series-color"/>
+		<input type="color" id="node-input-color2" class="series-color"/>
+		<input type="color" id="node-input-color3" class="series-color"/>
+	</div>
+	<div style="margin-top: 5px; margin-left: 104px;">
+		<input type="color" id="node-input-color4" class="series-color"/>
+		<input type="color" id="node-input-color5" class="series-color"/>
+		<input type="color" id="node-input-color6" class="series-color"/>
+	</div>
+	<div style="margin-top: 5px; margin-left: 104px;">
+		<input type="color" id="node-input-color7" class="series-color"/>
+		<input type="color" id="node-input-color8" class="series-color"/>
+		<input type="color" id="node-input-color9" class="series-color"/>
+	</div>
+</script>
+
+<script type="text/x-red" data-help-name="patlamp config">
+	<p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>
+
+<script type="text/javascript">
+	RED.nodes.registerType("patlamp",{
+		category: 'function',
+		color: '#a6bbcf',
+		defaults: {
+			name: {value:""},
+			mapfile: {
+				value:"",
+				required: true
+			},
+			reportinterval: {
+				value:"10",
+				validate:function(value) {return value === '' || RED.validators.number();},
+				required: true
+			},
+			detectinterval: {
+				value:"500",
+				validate:function(value) {return value === '' || RED.validators.number();},
+				required: true
+			},
+			colors: {value: ['#1F77B4', '#AEC7E8', '#FF7F0E', '#2CA02C', '#98DF8A', '#D62728', '#FF9896', '#9467BD', '#C5B0D5']},
+		},
+		inputs:0,
+		outputs:1,
+		icon: "file.png",
+		label: function() {
+			return this.name||"patlamp";
+		},
+		oneditprepare: function() {
+			if (this.colors) {
+				for (var i=0; i<this.colors.length; i++) {
+					var value = this.colors[i] || defaultColors[i];
+					setColour("#node-input-color"+(i+1), value);
+				}
+			}else {
+				for (var c=0; c<defaultColors.length; c++) {
+					setColour("#node-input-color"+(c+1), defaultColors[c]);
+				}
+			}
+			var setColour = function(id, value) {
+				$(id).val(value);
+				$(id).css("background-color", value);
+				var rgb = tinycolor(value).toRgb();
+				var level = ((rgb.r*299) + (rgb.g*587) + (rgb.b*114))/1000;
+				var textColor = (level >= 128) ? '#111111' : '#eeeeee';
+				$(id).css("color", textColor);
+			}
+		}
+	});
+</script>
+

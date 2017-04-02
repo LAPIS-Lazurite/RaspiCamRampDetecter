@@ -1,0 +1,1 @@
+cmd_Release/obj.target/patlamp.node := flock ./Release/linker.lock g++ -shared -pthread -rdynamic  -Wl,-soname=patlamp.node -o Release/obj.target/patlamp.node -Wl,--start-group Release/obj.target/patlamp/patlamp_wrap.o -Wl,--end-group 

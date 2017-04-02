@@ -1,0 +1,19 @@
+{
+  "name": "patlamp",
+  "version": "0.0.0",
+  "description": "Node-RED node to detect patlamp",
+  "scripts": {
+  },
+  "author": "Lapis semiconductor",
+  "license": "ISC",
+  "keywords": ["node-red"],
+  "node-red": {
+    "nodes": {
+      "patlamp": "patlamp.js"
+    }
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}

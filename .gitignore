@@ -27,3 +27,7 @@
 *.exe
 *.out
 *.app
+
+# tags / index
+tags
+tags.lock

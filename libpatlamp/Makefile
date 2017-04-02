@@ -15,18 +15,8 @@ EXECUTABLE :=$(SOURCES:.cpp=)
 #	$(CC) $(SOURCES) $(LDFLAGS) $(CFLAGS) -o $(EXECUTABLE) $(LIB)
 
 
-all: patlamp
-
-location_fix:
-	$(CC) location_fix.cpp $(LDFLAGS) $(CFLAGS) -o location_fix $(LIB)
-
-
-facedetect_demo:
-	$(CC) facedetect_demo.cpp $(LDFLAGS) $(CFLAGS) -o facedetect_demo $(LIB)
-
-patlamp:
-	rm -rf $(EXECUTABLE)
-	$(CC) patlamp.cpp $(LDFLAGS) $(CFLAGS) -o patlamp $(LIB)
+all: 
+	$(CC) -shared -fPIC dylibpatlamp.cpp $(LDFLAGS) $(CFLAGS) $(LIB) -o libpatlamp.so 
 
 clean:
 	    rm -rf $(EXECUTABLE)
