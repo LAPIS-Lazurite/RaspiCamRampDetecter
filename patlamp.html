@@ -1,36 +1,81 @@
 <!-- log file -->
-<script type="text/x-red" data-template-name="patlamp">
+<script type="text/x-red" data-template-name="patlamp-photo">
 	<div class="form-row">
 		<label for="node-input-name"><i class="icon-tag"></i> Name</label>
-		<input type="text" id="node-input-name" placeholder="Name">
+		<input type="text" id="node-input-name" placeholder="Name"></input>
 	</div>
 	<div class="form-row">
-		<label for="node-input-mapFilePath"><i class="icon-tag"></i> MAP file</label>
-		<input type="text" id="node-input-mapFilePath" placeholder="please input file path of map file">
+		<label for="node-input-path"><i class="fa fa-file"></i> path</label>
+		<input type="text" id="node-input-path" placeholder="please input folder name to storage photo files"></input>
+	</div>
+</script>
+
+<script type="text/x-red" data-template-name="patlamp-cam">
+	<div class="form-row">
+		<label for="node-input-name"><i class="icon-tag"></i> Name</label>
+		<input type="text" id="node-input-name" placeholder="Name"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-libFile"><i class="fa fa-file"></i> LIB file</label>
+		<input type="text" id="node-input-libFile" placeholder="please input library file"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-mapFile"><i class="fa fa-file"></i> MAP file</label>
+		<input type="text" id="node-input-mapFile" placeholder="please input file path of map file"></input>
 	</div>
 	<div class="form-row">
 		<label for="node-input-reportInterval"><i class="fa fa-clock-o"></i> Report</label>
-		<input type="text" id="node-input-reportInterval" placeholder="report interval" style = "width:80px;">
+		<input type="text" id="node-input-reportInterval" placeholder="report interval" style = "width:80px;"></input>
 		<label for="node-input-reportIntervalUnit"></i>sec</label>
 	</div>
 	<div class="form-row">
 		<label for="node-input-detectInterval"><i class="fa fa-clock-o"></i> Detect</label>
-		<input type="text" id="node-input-detectInterval" placeholder="detect interval" style = "width:80px;">
+		<input type="text" id="node-input-detectInterval" placeholder="detect interval" style = "width:80px;"></input>
 		<label for="node-input-reportIntervalUnit"></i>msec</label>
 	</div>
 </script>
 
-<script type="text/x-red" data-help-name="patlamp">
+<script type="text/x-red" data-help-name="patlamp-cam">
+	<p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>
+
+<script type="text/x-red" data-help-name="patlamp-photo">
 	<p>A simple node that converts the message payloads into all lower-case characters</p>
 </script>
 
 <script type="text/javascript">
-	RED.nodes.registerType("patlamp",{
-		category: 'function',
+	RED.nodes.registerType("patlamp-photo",{
+		category: 'patlamp',
+        paletteLabel: 'patlamp-photo',
+		color: '#a6bbcf',
+        align: 'right',
+		inputs:1,
+		outputs:0,
+		icon: "lazurite.png",
+		label: function() {
+			return this.name||"patlamp-photo";
+		},
+		defaults: {
+			name: {value:""},
+			path: {
+				value:"",
+				required: true
+			}
+		}
+	});
+</script>
+<script type="text/javascript">
+	RED.nodes.registerType("patlamp-cam",{
+		category: 'patlamp',
+        paletteLabel: 'patlamp-cam',
 		color: '#a6bbcf',
 		defaults: {
 			name: {value:""},
-			mapFilePath: {
+			libFile: {
+				value:"/home/pi/.node-red/node_modules/node-red-contrib-patlamp/libpatlamp/libpatlamp.so",
+				required: true
+			},
+			mapFile: {
 				value:"",
 				required: true
 			},
@@ -45,20 +90,20 @@
 		},
 		inputs:0,
 		outputs:1,
-		icon: "file.png",
+        align: 'left',
+		icon: "lazurite.png",
 		label: function() {
-			return this.name||"patlamp";
+			return this.name||"patlamp-cam";
 		},
 		button: {
 			toggle: "active",
 			onclick: function() {
-				var label = this.name||"patlamp";
+				var label = this.name||"patlamp-cam";
 				var node = this;
 				$.ajax({
-					url: "patlamp/"+this.id+"/"+(this.active?"enable":"disable"),
+					url: "patlamp_cam/"+this.id+"/"+(this.active?"enable":"disable"),
 					type: "POST",
 					success: function(resp, textStatus, xhr) {
-						console.log("success");
 						if (xhr.status == 200) {
 							RED.notify(node._("activated",{label:label}),"success");
 						} else if (xhr.status == 201) {
@@ -109,7 +154,7 @@
 					});
 					RED.view.redraw();
 				}
-			}
+			};
 			var uiComponents = RED.debug.init(options);
 			RED.sidebar.addTab({
 				id: "debug",
@@ -126,7 +171,7 @@
 			RED._debug = function(msg) {
 				console.log(msg);
 				that.handleDebugMessage("",{
-					name:"patlamp",
+					name:"patlamp-cam",
 					msg:msg
 				});
 			},
@@ -142,7 +187,7 @@
 				} else if (msg.event === "clear") {
 					options.clear();
 				}
-			}
+			};
 			window.addEventListener('message',this.handleWindowMessage);
 		},
 		onpaletteremove: function() {

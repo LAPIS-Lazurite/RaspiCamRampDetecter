@@ -1,19 +1,35 @@
 {
-  "name": "patlamp",
-  "version": "0.0.0",
-  "description": "Node-RED node to detect patlamp",
+  "name": "node-red-contrib-lazurite",
+  "version": "0.0.4",
+  "description": "Patlamp monitoring system",
+  "main": "patlamp.js",
   "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Lapis semiconductor",
-  "license": "ISC",
-  "keywords": ["node-red"],
   "node-red": {
     "nodes": {
       "patlamp": "patlamp.js"
     }
   },
-  "dependencies": {
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LAPIS-Lazurite/node-red-contrib-patlamp.git"
   },
-  "devDependencies": {
-  }
+  "author": {
+    "name": "Naotaka Saito"
+  },
+  "bugs": {
+    "url": "https://github.com/LAPIS-Lazurite/node-red-contrib-lazurite/issues"
+  },
+  "keywords": [
+    "node-red",
+    "Lazurite"
+  ],
+  "license": "Apache-2.0",
+  "maintainers": [
+    {
+      "name": "naotakasaito",
+      "email": "saitou088@dsn.lapis-semi.com"
+    }
+  ]
 }

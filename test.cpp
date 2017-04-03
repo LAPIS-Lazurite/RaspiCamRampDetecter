@@ -25,6 +25,7 @@ std:string result;
 	}
 	patlamp::dispImage(false);
 	patlamp::snapShot("./out.jpg");
-	sleep(15);
+	patlamp::remove();
+	sleep(3);
 	return 0;
 }

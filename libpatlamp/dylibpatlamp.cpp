@@ -46,6 +46,8 @@ namespace patlamp
 	int expandMag = 4;				// expand display
 	int reportInterval = 10;			// report interval
 	int detectInterval = 500;			// imaging capture interval
+	bool onExecute = false;			// trigger of imaging picture
+	bool onCamera = false;			// trigger of imaging picture
 
 	struct IMAGE_SIZE {
 		int width;
@@ -287,14 +289,14 @@ namespace patlamp
 
 		// catch raspi-cam
 		capture = (RaspiCamCvCapture *) raspiCamCvCreateCameraCapture2(0, config); 
+		onCamera = true;
 
 		//cvNamedWindow( "drawing", 1 );
 		//cvNamedWindow( "origin", 1 );
-
-
 		if( capture )
 		{
 			cout << "In capture ..." << endl;
+			onExecute = true;
 			for(;;)
 			{
 
@@ -356,7 +358,6 @@ namespace patlamp
 								cv::Point(10,100),
 								FONT_HERSHEY_TRIPLEX,1,CV_RGB(textColor.b,textColor.g,textColor.r),1,CV_AA);
 						cv::imshow("origin", dispImage);
-
 					} else {
 						sprintf(mousePoint,"%d,%d", mouse.x,mouse.y);
 						putText(mainFrame,mousePoint,
@@ -370,21 +371,20 @@ namespace patlamp
 						enbDisp=false;
 					}
 				}
-
-				if( waitKey( 10 ) >= 0 )
-					goto _cleanup_;
+				if(!onExecute) break;
+				waitKey(10);
 			}
-
-			waitKey(0);
-
 _cleanup_:
-
 			// -------------------------------------------
 			// ★raspicam対応
 			// -------------------------------------------
 			//cvReleaseCapture( &capture );
-			raspiCamCvReleaseCapture(&capture);
-
+			if(onCamera) {
+				raspiCamCvReleaseCapture(&capture);
+				free(config);
+				config = NULL;
+				onCamera = false;
+			}
 		}
 		//cvDestroyWindow("drawing");
 		if(enbDisp){
@@ -393,7 +393,7 @@ _cleanup_:
 		}
 	}
 
-	int init(void) {
+	extern "C" int init(void) {
 
 		int args = 0;
 		int result = 0;
@@ -407,23 +407,32 @@ _cleanup_:
 					&main_thread,         // スレッドにできるのは、static なメソッドや関数のみ
 					(void *)& args 							// parameters  to throw thread
 					);
-		} else {
-			result = -1;
 		}
 
 		return result;
 	}
-
-	int remove(void) {
+	extern "C" int remove(void) {
+		onExecute=false;
+		printf("waiting to release camera");
+		while(1) {
+			pthread_mutex_lock(&mutex);
+			if(!onCamera) break;
+			printf(".");
+			pthread_mutex_unlock(&mutex);
+			usleep(100*1000);
+		}
+		printf("\n success to release camera\n");
 		std::cout << "destructor start" << std::endl;
 		pthread_cancel(thread_handler);     // スレッドにキャンセル要求を投げる
 		pthread_join(thread_handler, NULL); // スレッドが終了するまで待機
 		std::cout << "destructor end" << std::endl;
+		thread_handler = 0;
+		pthread_mutex_unlock(&mutex);
 
 		return 0;
 	}
 
-	int setMapfile(std::string str) {
+	extern "C" int setMapfile(std::string str) {
 
 		int result = 0;
 		if(str == "") result = -1;
@@ -437,7 +446,7 @@ _cleanup_:
 		return 0;
 	}
 
-	int dispImage(bool on) {
+	extern "C" int setDisplay(bool on) {
 
 		pthread_mutex_lock(&mutex);
 		onImage = on;
@@ -446,7 +455,17 @@ _cleanup_:
 		return 0;
 	}
 
-	int setDetectInterval(int msec) {
+	extern "C" bool getDisplay(void) {
+		bool flag;
+
+		pthread_mutex_lock(&mutex);
+		flag = onImage;
+		pthread_mutex_unlock(&mutex);
+
+		return flag;
+	}
+
+	extern "C" int setDetectInterval(int msec) {
 
 		int result = 0;
 
@@ -459,7 +478,7 @@ _cleanup_:
 		return result;
 	}
 
-	int setReportInterval(int sec) {
+	extern "C" int setReportInterval(int sec) {
 
 		int result = 0;
 
@@ -472,7 +491,7 @@ _cleanup_:
 		return result;
 	}
 
-	bool readData(std::string &payload) {
+	extern "C" bool readData(std::string &payload) {
 
 		int result = true;
 		char tmp[16];
@@ -496,7 +515,7 @@ _cleanup_:
 		return result;
 	}
 
-	void setTextColor(unsigned char r,unsigned char g,unsigned b) {
+	extern "C" void setTextColor(unsigned char r,unsigned char g,unsigned char b) {
 		pthread_mutex_lock(&mutex);
 		textColor.r = r;
 		textColor.g = g;
@@ -504,7 +523,7 @@ _cleanup_:
 		pthread_mutex_unlock(&mutex);
 	}
 
-	void snapShot(std::string filepath) {
+	extern "C" void snapShot(std::string filepath) {
 		pthread_mutex_lock(&mutex);
 		imgfile = filepath;
 		onImageWrite = true;
@@ -517,26 +536,26 @@ _cleanup_:
 #endif
 
 /*
-   using namespace patlamp;
-   int main(void)
-   {
-std:string result;
-patlamp::setInterval(10);
-patlamp::setMapfile("./map.txt");
-patlamp::dispImage(true);
-patlamp::init();
-for(int i=0;i<30;i++) {
-if( patlamp::readData(result) == false ) {
-std::cout << "no data" << std::endl;
-} else {
-std::cout << result << std::endl;
+using namespace patlamp;
+int main(void)
+{
+	std:string result;
+	patlamp::setInterval(10);
+	patlamp::setMapfile("./map.txt");
+	patlamp::dispImage(true);
+	patlamp::init();
+	for(int i=0;i<30;i++) {
+		if( patlamp::readData(result) == false ) {
+			std::cout << "no data" << std::endl;
+		} else {
+			std::cout << result << std::endl;
+		}
+		sleep(2);
+	}
+	patlamp::dispImage(false);
+	patlamp::snapShot("./out.jpg");
+	sleep(15);
+	patlamp::remove();
+	return 0;
 }
-sleep(2);
-}
-patlamp::dispImage(false);
-patlamp::snapShot("./out.jpg");
-sleep(15);
-patlamp::remove();
-return 0;
-}
- */
+*/

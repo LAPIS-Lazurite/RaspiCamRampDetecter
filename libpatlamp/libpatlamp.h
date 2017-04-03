@@ -6,19 +6,22 @@
 
 #ifdef __cplusplus
 namespace patlamp {
+	extern "C" {
 #endif
 
 	int init(void);
 	bool readData(std::string &result);
 	void snapShot(std::string filepath);
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b);
-	int dispImage(bool on);
+	int setDisplay(bool on);
+	bool getDisplay(void);
 	int setMapfile(std::string str);
 	int setReportInterval(int sec);
 	int setDetectInterval(int msec);
 	int remove(void);
 
 #ifdef __cplusplus
+	}
 };
 #endif
 

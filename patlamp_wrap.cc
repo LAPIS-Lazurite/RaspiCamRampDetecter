@@ -43,7 +43,8 @@ struct PATLAMP_LIB {
 	bool (*readData)(std::string &result);
 	void (*snapShot)(std::string filepath);
 	void (*setTextColor)(unsigned char r, unsigned char g, unsigned char b);
-	int (*dispImage)(bool on);
+	int (*setDisplay)(bool on);
+	bool (*getDisplay)();
 	int (*setMapfile)(std::string str);
 	int (*setReportInterval)(int sec);
 	int (*setDetectInterval)(int msec);
@@ -68,8 +69,20 @@ funcptr find(void* handle, const char * name) {
 Handle<Value> dlopen(const Arguments& args) {
 	HandleScope scope;
 
+	if(args.Length() != 1) {
+		return ThrowException(String::New("args must be 1"));
+	}
+	if(!args[0]->IsString()) {
+		return ThrowException(String::New("args must be string of library path"));
+	}
+
+	String::AsciiValue v8_filepath(args[0]);
+	std::string filepath = *v8_filepath;
+
+	printf("%s\n",filepath.c_str());
+
 	if(!opened) {
-		handle = dlopen ("./libpalramp/libpatlamp.so", RTLD_LAZY);
+		handle = dlopen (filepath.c_str(), RTLD_LAZY);
 		if (!handle) {
 			fprintf (stderr, "%s\n", dlerror());
 			return scope.Close(Boolean::New(false));
@@ -78,12 +91,14 @@ Handle<Value> dlopen(const Arguments& args) {
 		lib.readData    = (bool (*)(std::string&))find(handle, "readData");
 		lib.snapShot   = (void (*)(std::string))find(handle, "snapShot");
 		lib.setTextColor  = (void (*)(unsigned char, unsigned char, unsigned char))find(handle, "setTextColor");
-		lib.dispImage     = (int (*)(bool))find(handle, "dispImage");
+		lib.setDisplay     = (int (*)(bool))find(handle, "setDisplay");
+		lib.getDisplay     = (bool (*)(void))find(handle, "getDisplay");
 		lib.setMapfile       = (int (*)(std::string))find(handle, "setMapfile");
 		lib.setReportInterval    = (int (*)(int))find(handle, "setReportInterval");
 		lib.setDetectInterval    = (int (*)(int))find(handle, "setDetectInterval");
 		lib.remove     = (int (*)(void))find(handle, "remove");
 		opened = true;
+		printf("dlopen\n");
 	}
 	return scope.Close(Boolean::New(true));
 }
@@ -97,6 +112,7 @@ Handle<Value> patlamp_init(const Arguments& args) {
 		} else {
 			if(lib.init() == 0) initialized = true;
 		}
+		printf("patlamp_init\n");
 	}
 	return scope.Close(Boolean::New(initialized));
 }
@@ -170,7 +186,7 @@ Handle<Value> patlamp_setTextColor(const Arguments& args) {
 	return scope.Close(Boolean::New(false));
 }
 
-Handle<Value> patlamp_dispImage(const Arguments& args) {
+Handle<Value> patlamp_setDisplay(const Arguments& args) {
 	HandleScope scope;
 
 	if(args.Length() != 1) {
@@ -183,8 +199,8 @@ Handle<Value> patlamp_dispImage(const Arguments& args) {
 	bool disp = args[0]->BooleanValue();
 
 	if(initialized) {
-		if(lib.dispImage) {
-			lib.dispImage(disp);
+		if(lib.setDisplay) {
+			lib.setDisplay(disp);
 			return scope.Close(Boolean::New(true));
 		} else {
 			return ThrowException(String::New("cannot find dispImage in library"));
@@ -193,6 +209,15 @@ Handle<Value> patlamp_dispImage(const Arguments& args) {
 	return scope.Close(Boolean::New(false));
 }
 
+Handle<Value> patlamp_getDisplay(const Arguments& args) {
+	HandleScope scope;
+	bool disp;
+	if(initialized) {
+		disp = lib.getDisplay();
+		return scope.Close(Boolean::New(disp));
+	}
+	return scope.Close(Boolean::New(false));
+}
 Handle<Value> patlamp_setMapfile(const Arguments& args) {
 	HandleScope scope;
 
@@ -200,7 +225,8 @@ Handle<Value> patlamp_setMapfile(const Arguments& args) {
 		return ThrowException(String::New("args must be 1"));
 	}
 	if(!args[0]->IsString()) {
-		return ThrowException(String::New("args must be string of filepath"));
+		printf("[warn] patlamp map file is not indicated!!\n");
+		return scope.Close(Boolean::New(false));
 	}
 
 	String::AsciiValue v8_filepath(args[0]);
@@ -208,10 +234,11 @@ Handle<Value> patlamp_setMapfile(const Arguments& args) {
 
 	if(initialized) {
 		if(lib.setMapfile) {
+			printf("map file %s\n",filepath.c_str());
 			lib.setMapfile(filepath);
 			return scope.Close(Boolean::New(true));
 		} else {
-			return ThrowException(String::New("cannot find shapShot in library"));
+			return ThrowException(String::New("cannot find setMapfile in library"));
 		}
 	}
 	return scope.Close(Boolean::New(false));
@@ -269,6 +296,7 @@ Handle<Value> patlamp_remove(const Arguments& args) {
 			if(lib.remove() == 0) {
 				result = true;
 				initialized = false;
+				printf("patlamp_remove\n");
 			}
 		} else {
 			fprintf (stderr, "libpatlamp cannot remove.\n");
@@ -286,6 +314,7 @@ Handle<Value> dlclose(const Arguments& args) {
 		initialized = false;
 		opened = false;
 		memset(&lib,0,sizeof(lib));
+		printf("dlclose\n");
 	}
 	return scope.Close(Boolean::New(true));
 }
@@ -297,7 +326,8 @@ void node_init(Handle<Object> target) {
 	NODE_SET_METHOD(target, "patlamp_readData", patlamp_readData);
 	NODE_SET_METHOD(target, "patlamp_snapShot", patlamp_snapShot);
 	NODE_SET_METHOD(target, "patlamp_setTextColor", patlamp_setTextColor);
-	NODE_SET_METHOD(target, "patlamp_dispImage", patlamp_dispImage);
+	NODE_SET_METHOD(target, "patlamp_setDisplay", patlamp_setDisplay);
+	NODE_SET_METHOD(target, "patlamp_getDisplay", patlamp_getDisplay);
 	NODE_SET_METHOD(target, "patlamp_setMapfile", patlamp_setMapfile);
 	NODE_SET_METHOD(target, "patlamp_setReportInterval", patlamp_setReportInterval);
 	NODE_SET_METHOD(target, "patlamp_setDetectInterval", patlamp_setDetectInterval);
