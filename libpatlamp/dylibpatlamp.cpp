@@ -491,6 +491,19 @@ _cleanup_:
 		return result;
 	}
 
+	extern "C" int setExpandMag(int mag) {
+
+		int result = 0;
+
+		if(mag <= 0) result = -1;
+		else {
+			pthread_mutex_lock(&mutex);
+			expandMag = mag;
+			pthread_mutex_unlock(&mutex);
+		}
+		return result;
+	}
+
 	extern "C" bool readData(std::string &payload) {
 
 		int result = true;

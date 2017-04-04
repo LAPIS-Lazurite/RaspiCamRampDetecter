@@ -48,6 +48,7 @@ struct PATLAMP_LIB {
 	int (*setMapfile)(std::string str);
 	int (*setReportInterval)(int sec);
 	int (*setDetectInterval)(int msec);
+	int (*setExpandMag)(int mag);
 	int (*remove)(void);
 } lib;
 
@@ -96,6 +97,7 @@ Handle<Value> dlopen(const Arguments& args) {
 		lib.setMapfile       = (int (*)(std::string))find(handle, "setMapfile");
 		lib.setReportInterval    = (int (*)(int))find(handle, "setReportInterval");
 		lib.setDetectInterval    = (int (*)(int))find(handle, "setDetectInterval");
+		lib.setExpandMag    = (int (*)(int))find(handle, "setExpandMag");
 		lib.remove     = (int (*)(void))find(handle, "remove");
 		opened = true;
 		printf("dlopen\n");
@@ -287,6 +289,29 @@ Handle<Value> patlamp_setDetectInterval(const Arguments& args) {
 	}
 	return scope.Close(Boolean::New(false));
 }
+
+Handle<Value> patlamp_setExpandMag(const Arguments& args) {
+	HandleScope scope;
+
+	if(args.Length() != 1) {
+		return ThrowException(String::New("args must be 1"));
+	}
+	if(!args[0]->IsNumber()) {
+		return ThrowException(String::New("args must be value of displayed expand magnification"));
+	}
+	int mag = args[0]->NumberValue();
+	
+	if(initialized) {
+		if(lib.setExpandMag) {
+			lib.setExpandMag(mag);
+			return scope.Close(Boolean::New(true));
+		} else {
+			return ThrowException(String::New("cannot find setExpandMag in library"));
+		}
+	}
+	return scope.Close(Boolean::New(false));
+}
+
 Handle<Value> patlamp_remove(const Arguments& args) {
 	HandleScope scope;
 	bool result = false;
@@ -331,6 +356,7 @@ void node_init(Handle<Object> target) {
 	NODE_SET_METHOD(target, "patlamp_setMapfile", patlamp_setMapfile);
 	NODE_SET_METHOD(target, "patlamp_setReportInterval", patlamp_setReportInterval);
 	NODE_SET_METHOD(target, "patlamp_setDetectInterval", patlamp_setDetectInterval);
+	NODE_SET_METHOD(target, "patlamp_setExpandMag", patlamp_setExpandMag);
 	NODE_SET_METHOD(target, "patlamp_remove", patlamp_remove);
 	NODE_SET_METHOD(target, "dlclose", dlclose);
 }

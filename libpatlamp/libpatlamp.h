@@ -18,6 +18,7 @@ namespace patlamp {
 	int setMapfile(std::string str);
 	int setReportInterval(int sec);
 	int setDetectInterval(int msec);
+	int setExpandMag(int mag);
 	int remove(void);
 
 #ifdef __cplusplus

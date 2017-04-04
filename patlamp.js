@@ -2,6 +2,7 @@
 
 module.exports = function(RED) {
 	var lib;
+	var opened = false;
 	var stream = require('stream');
 	var util = require('util');
 
@@ -10,21 +11,24 @@ module.exports = function(RED) {
 	}
 
 	function connect(node) {
-		if(!node.opened) {
-			console.log("node.open");
+		node.status({fill:"red",shape:"ring",text:"disconnected"});
+		if(!opened) {
+			lib = require('./build/Release/patlamp_wrap');
 			if(!lib.dlopen(node.libFile)) { Warn("dlopen fail"); return false; }
-			console.log("success lib.dlopen");
 			if(!lib.patlamp_init()) { Warn("patlamp_init fail"); return false; }
-			console.log("success lib.patlamp_init");
+			node.status({fill:"green",shape:"dot",text:"connected"},true);
+			opened = true;
+		} else {
 			node.status({fill:"green",shape:"dot",text:"connected"},true);
 		}
 		return true;
 	}
 
 	function disconnect(node) {
-		if(node.opened) {
+		if(opened) {
 			if(!lib.patlamp_remove()) { Warn("lazurite_rxDisable fail."); }
 			if(!lib.dlclose()) { Warn("dlclose fail"); }
+			opened = false;
 		}
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		return false;
@@ -33,14 +37,14 @@ module.exports = function(RED) {
 	function translate(value) {
 	    return ("0" + value).slice(-2)
 	}
+	function patlamp_open() {
+		if(!opened) lib = require('./build/Release/patlamp_wrap');
+	}
 	function patlamp_init(node) {
-		console.log(node);
-		console.log("setMapfile:: "+node.mapFile);
 		lib.patlamp_setMapfile(node.mapFile);
-		console.log("setReportInterval:: "+ node.reportInterval);
 		lib.patlamp_setReportInterval(node.reportInterval);
-		console.log("setDetectInterval:: "+ node.detectInterval);
 		lib.patlamp_setDetectInterval(node.detectInterval);
+		lib.patlamp_setExpandMag(node.expandMag);
 		node.disp = lib.patlamp_getDisplay();
 		return;
 	}
@@ -48,19 +52,30 @@ module.exports = function(RED) {
 	function patlamp_cam(config) {
 		RED.nodes.createNode(this,config);
 		var node = this;
-		lib = require('./build/Release/patlamp_wrap');
 		this.libFile =config.libFile;
 		this.mapFile =config.mapFile;
-		this.reportInterval =config.reportInterval;
-		this.detectInterval =config.detectInterval;
-		this.opened = false;
-		this.opened = connect(node);
-		if(!this.opened) { Warn("[patlamp-cam] open error"); }
+
+		if (typeof config.reportInterval === 'string' || config.reportInterval instanceof String) {
+			this.reportInterval = parseInt(config.reportInterval);
+		} else {
+			this.reportInterval = config.reportInterval;
+		}
+		if (typeof config.detectInterval === 'string' || config.detectInterval instanceof String) {
+			this.detectInterval = parseInt(config.detectInterval);
+		} else {
+			this.detectInterval = config.detectInterval;
+		}
+		if (typeof config.expandMag === 'string' || config.expandMag instanceof String) {
+			this.expandMag = parseInt(config.expandMag);
+		} else {
+			this.expandMag = config.expandMag;
+		}
+		opened = connect(node);
+		if(!opened) { Warn("[patlamp-cam] open error"); }
 		else {console.log("[patlamp-cam]success!");}
 		this.timer = null;
 		this.interval=1000;
 		if(this.disp == undefined) this.disp = false;
-		console.log(lib);
 		patlamp_init(node);
 		this.timer = setInterval(function() {
 			if(this.disp) {
@@ -80,7 +95,7 @@ module.exports = function(RED) {
 			msg.payload = lib.patlamp_readData();
 			if(msg.payload != "") node.send(msg);
 		}.bind(this),this.interval);
-		this.opened=true;
+		opened=true;
 
 		node.on('close', function(done) {
 //			if(this.opened) {
@@ -89,22 +104,34 @@ module.exports = function(RED) {
 				done();
 //			}
 //			this.opened = false;
-			console.log("node.close");
 		});
 	}
 
 	function patlamp_photo(config) {
 		RED.nodes.createNode(this,config);
 		var node = this;
+		connect(node);
 		this.path=config.path;
+		this.extention="jpg";
 
 		node.on('input', function(msg) {
-			console.log(msg);
-		});
-		node.on('close', function(done) {
-			disconnect(node);
-			done();
-			delete require.cache[require.resolve('./build/Release/patlamp_wrap')];
+			var util = require("util");
+			var date = new Date(Date.now());
+			if(this.path=="") return false;
+			if(this.path.slice(-1)=="/") {
+				this.path = this.path.slice(0,this.path.length-1);
+			}
+			var fileName = util.format("%s/%d%s%s%s%s%s%s.%s",
+				this.path,
+				date.getFullYear(),
+				translate(date.getMonth() + 1),
+				translate(date.getDate()),
+				translate(date.getHours()),
+				translate(date.getMinutes()),
+				translate(date.getSeconds()),
+				translate(date.getMilliseconds()),
+				this.extention);
+			lib.patlamp_snapShot(fileName);
 		});
 	}
 

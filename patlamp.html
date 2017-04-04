@@ -16,7 +16,7 @@
 		<input type="text" id="node-input-name" placeholder="Name"></input>
 	</div>
 	<div class="form-row">
-		<label for="node-input-libFile"><i class="fa fa-file"></i> LIB file</label>
+		<label for="node-input-libFile"><i class="fa fa-camera"></i> LIB file</label>
 		<input type="text" id="node-input-libFile" placeholder="please input library file"></input>
 	</div>
 	<div class="form-row">
@@ -32,6 +32,13 @@
 		<label for="node-input-detectInterval"><i class="fa fa-clock-o"></i> Detect</label>
 		<input type="text" id="node-input-detectInterval" placeholder="detect interval" style = "width:80px;"></input>
 		<label for="node-input-reportIntervalUnit"></i>msec</label>
+	</div>
+	<div class="form-row">
+		<label for="node-input-expandMag"><i class="fa fa-search-plus"></i> Magnification</label>
+		<select id="node-input-expandMag">
+			<option value=2> 2 </option>
+			<option value=4 selected> 4 </option>
+		</select>
 	</div>
 </script>
 
@@ -86,6 +93,9 @@
 			detectInterval: {value: 500,
 				validate:RED.validators.number(),
 				required:true
+			},
+			expandMag: {
+				validate:RED.validators.number()
 			}
 		},
 		inputs:0,
