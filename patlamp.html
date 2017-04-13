@@ -1,4 +1,33 @@
 <!-- log file -->
+<script type="text/x-red" data-template-name="patlamp-csv">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-mapFile"><i class="fa fa-camera"></i> MAP</label>
+        <input type="text" id="node-input-mapFile"> 
+    </div>
+    <div class="form-row">
+        <label for="node-input-mapFile"><i class="fa fa-camera"></i> MAP</label>
+        <input type="text" id="node-input-mapFile"> 
+    </div>
+	<div class="form-row">
+		<label for="node-input-mode"><i class="fa fa-search-plus"></i> mode</label>
+		<select id="node-input-mode">
+			<option value="count">count</option>
+			<option value="ratio" selected>ratio</option>
+			<option value="total count">total count</option>
+			<option value="total ratio">total ratio</option>
+		</select>
+	</div>
+    <div class="form-row">
+        <label for="node-input-outputs"><i class="fa fa-random"></i> <span data-i18n="function.label.outputs"></span></label>
+        <input id="node-input-outputs" style="width: 60px;" value="1">
+    </div>
+    <div class="form-tips"><span data-i18n="function.tip"></span></div>
+</script>
+
 <script type="text/x-red" data-template-name="patlamp-photo">
 	<div class="form-row">
 		<label for="node-input-name"><i class="icon-tag"></i> Name</label>
@@ -50,6 +79,35 @@
 	<p>A simple node that converts the message payloads into all lower-case characters</p>
 </script>
 
+<script type="text/javascript">
+	RED.nodes.registerType("patlamp-csv",{
+		category: 'patlamp',
+        paletteLabel: 'patlamp-csv',
+		color: '#a6bbcf',
+        align: 'right',
+		icon: "lazurite.png",
+		label: function() {
+			return this.name||"patlamp-csv";
+		},
+		defaults: {
+			name: {value:""},
+			mapFile: {
+				value:"",
+				required: true
+			},
+			mode: {value: "ratio"},
+			outputs: {value:1}
+		},
+		inputs:1,
+		outputs:1,
+		oneditprepare: function() {
+            var that = this;
+            $( "#node-input-outputs" ).spinner({
+                min:1
+            });
+		}
+	});
+</script>
 <script type="text/javascript">
 	RED.nodes.registerType("patlamp-photo",{
 		category: 'patlamp',

@@ -1,5 +1,3 @@
-
-
 module.exports = function(RED) {
 	var lib;
 	var opened = false;
@@ -135,8 +133,73 @@ module.exports = function(RED) {
 		});
 	}
 
+	function patlamp_csv(config) {
+		RED.nodes.createNode(this,config);
+		var node = this;
+		this.mapFile = config.mapFile;
+		var mode = config.mode;
+		var sum;
+		var fs = require('fs');
+		var readline = require('readline');
+		var rl = readline.createInterface(fs.createReadStream(this.mapFile),{});
+		var map = [["sum",0,0,0,0]];
+		sum = [];
+
+		rl.on('line',function(line) {
+			var data = line.split(",");
+			if((data.length == 6)&&(data[0].slice(0,1)!="#")) {
+				var name = data[0] + "-" + data[1];
+				var x = parseInt(data[2]);
+				var y = parseInt(data[3]);
+				var size = parseInt(data[4]);
+				var threshold = parseInt(data[5]);
+				map.push([name,x,y,size,threshold]);
+			}
+		});
+		node.on('input', function(msg) {
+			var data = msg.payload.split(",");
+			var count;
+			msg = [];
+			if ((mode == "total ratio") || (mode == "total count")) {
+				if(data.length != sum.length) {
+					sum = [];
+					for(var n in data) {
+						sum.push(0);
+					}
+				}
+			}
+			data.forEach(function (element,index,array) {
+				var newMsg = {};
+				if(element) {
+					if(index == 0){
+						count = parseInt(element);
+					}
+					if(mode == "ratio") {
+						newMsg.payload = parseInt(element) / count;
+					} else if(mode == "count") {
+						newMsg.payload = parseInt(element);
+					} else if(mode == "total ratio") {
+						sum[index] += parseInt(element);
+						newMsg.payload = sum[index]/sum[0];
+					} else {
+						sum[index] += parseInt(element);
+						newMsg.payload = sum[index];
+					}
+					newMsg.topic = map[index][0];
+					newMsg.x = map[index][1];
+					newMsg.y = map[index][2];
+					newMsg.size = map[index][3];
+					newMsg.threshold = map[index][4];
+					msg.push(newMsg);
+				}
+			});
+			node.send(msg);
+		});
+	}
+
 	RED.nodes.registerType("patlamp-cam",patlamp_cam);
 	RED.nodes.registerType("patlamp-photo",patlamp_photo);
+	RED.nodes.registerType("patlamp-csv",patlamp_csv);
     RED.httpAdmin.post("/patlamp_cam/:id/:state", RED.auth.needsPermission("patlamp-cam.write"), function(req,res) {
         var node = RED.nodes.getNode(req.params.id);
         var state = req.params.state;
