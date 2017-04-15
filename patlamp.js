@@ -77,13 +77,13 @@ module.exports = function(RED) {
 		patlamp_init(node);
 		this.timer = setInterval(function() {
 			if(this.disp) {
-				if(!this.active){
+				if(!node.active){
 					console.log("disp off")
 					lib.patlamp_setDisplay(false);
 					this.disp = false;
 				}
 			} else {
-				if(this.active) {
+				if(node.active) {
 					console.log("disp on")
 					lib.patlamp_setDisplay(true);
 					this.disp = true;
@@ -200,17 +200,15 @@ module.exports = function(RED) {
 	RED.nodes.registerType("patlamp-cam",patlamp_cam);
 	RED.nodes.registerType("patlamp-photo",patlamp_photo);
 	RED.nodes.registerType("patlamp-csv",patlamp_csv);
-    RED.httpAdmin.post("/patlamp_cam/:id/:state", RED.auth.needsPermission("patlamp-cam.write"), function(req,res) {
+    RED.httpAdmin.post("/patlamp-cam/:id/:state", RED.auth.needsPermission("patlamp-cam.write"), function(req,res) {
         var node = RED.nodes.getNode(req.params.id);
         var state = req.params.state;
         if (node !== null && typeof node !== "undefined" ) {
             if (state === "enable") {
                 node.active = true;
-				this.active = true;
                 res.sendStatus(200);
             } else if (state === "disable") {
                 node.active = false;
-				this.active = false;
                 res.sendStatus(201);
             } else {
                 res.sendStatus(404);
