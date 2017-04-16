@@ -73,10 +73,9 @@ module.exports = function(RED) {
 		else {console.log("[patlamp-cam]success!");}
 		this.timer = null;
 		this.interval=1000;
-		if(this.disp == undefined) this.disp = false;
 		patlamp_init(node);
 		this.timer = setInterval(function() {
-			if(this.disp) {
+			if(this.disp === true) {
 				if(!node.active){
 					console.log("disp off")
 					lib.patlamp_setDisplay(false);
